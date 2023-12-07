@@ -41,7 +41,6 @@ try {
         $insertProductQuery->bind_param('ssdi', $product_name, $description, $price, $seller_id);
         $insertProductQuery->execute();
 
-        // Check if the insertion was successful
         if ($insertProductQuery->affected_rows > 0) {
             $response['status'] = 'Success';
             $response['message'] = 'Product added successfully';

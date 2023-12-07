@@ -25,8 +25,6 @@ if ($query->execute()) {
 
 echo json_encode($response);
 
-// Close the statement
 $query->close();
-// Close the database connection
 $mysqli->close();
 ?>

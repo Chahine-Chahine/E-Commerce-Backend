@@ -26,7 +26,7 @@ if (!$token) {
 }
 
 try {
-    $key = "your_secret"; // Replace with your actual secret key
+    $key = "your_secret"; 
     $decoded = JWT::decode($token, new Key($key, 'HS256'));
 
     if ($decoded->usertype === "seller" && isset($decoded->user_id)) {
@@ -61,10 +61,8 @@ try {
         }
 
         echo json_encode($response);
-
-        // Close the statement
+        
         $query->close();
-        // Close the database connection
         $mysqli->close();
     } else {
         $response = [];

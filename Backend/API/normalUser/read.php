@@ -29,10 +29,8 @@ try {
     $key = "your_secret"; 
     $decoded = JWT::decode($token, new Key($key, 'HS256'));
 
-    if ($decoded->usertype === "seller" && isset($decoded->user_id)) {
-        $seller_id = $decoded->user_id;
-
-        $result = $mysqli->query("SELECT * FROM products WHERE seller_id = $seller_id");
+    if ($decoded->usertype === "normal") {
+        $result = $mysqli->query("SELECT * FROM products");
 
         $products = [];
 
@@ -53,4 +51,5 @@ try {
     http_response_code(401);
     echo json_encode(["error" => "Invalid token"]);
 }
+$mysqli->close();
 ?>
