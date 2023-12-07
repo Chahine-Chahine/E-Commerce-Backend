@@ -25,10 +25,10 @@ if ($query->execute()) {
         $query->fetch();
 
         if (password_verify($password, $hashed_password)) {
-            $key = "your_secret"; // Replace with your actual secret key
+            $key = "your_secret";
             $payload_array = [];
             $payload_array["user_id"] = $user_id;
-            $payload_array["usertype"] = $role; // Assuming the role indicates usertype
+            $payload_array["usertype"] = $role;
             $payload_array["exp"] = time() + 3600;
             $payload = $payload_array;
             $response['status'] = 'logged in';

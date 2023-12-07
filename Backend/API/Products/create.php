@@ -19,6 +19,7 @@ $authorizationHeader = $headers['Authorization'];
 $token = null;
 
 $token = trim(str_replace("Bearer", '', $authorizationHeader));
+print_r($authorizationHeader);
 if (!$token) {
     http_response_code(401);
     echo json_encode(["error" => "unauthorized"]);
@@ -29,7 +30,7 @@ try {
     $key = "your_secret"; 
     $decoded = JWT::decode($token, new Key($key, 'HS256'));
 
-    if ($decoded->usertype == 0) {
+    if ($decoded->usertype == 1) {
         $product_name = $_POST['product_name'];
         $description = $_POST['description'];
         $price = $_POST['price'];
