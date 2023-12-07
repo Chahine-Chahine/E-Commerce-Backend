@@ -30,7 +30,7 @@ try {
     $key = "your_secret"; 
     $decoded = JWT::decode($token, new Key($key, 'HS256'));
 
-    if ($decoded->usertype == 1) {
+    if ($decoded->usertype === "seller") {
         $product_name = $_POST['product_name'];
         $description = $_POST['description'];
         $price = $_POST['price'];
