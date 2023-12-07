@@ -11,7 +11,7 @@ use Firebase\JWT\Key;
 $headers = getallheaders();
 if (!isset($headers['Authorization']) || empty($headers['Authorization'])) {
     http_response_code(401);
-    echo json_encode(["error" => "unauthorized"]);
+    echo json_encode(["status" => "error", "message" => "Unauthorized"]);
     exit();
 }
 
@@ -22,7 +22,7 @@ $token = trim(str_replace("Bearer", '', $authorizationHeader));
 
 if (!$token) {
     http_response_code(401);
-    echo json_encode(["error" => "unauthorized"]);
+    echo json_encode(["status" => "error", "message" => "Unauthorized"]);
     exit();
 }
 
@@ -30,37 +30,38 @@ try {
     $key = "your_secret"; 
     $decoded = JWT::decode($token, new Key($key, 'HS256'));
 
-    if ($decoded->usertype === "seller") {
+    if ($decoded->usertype === "seller" && $decoded->user_id) {
+        $seller_id = $decoded->user_id;
+
         $product_id = $_POST['product_id'];
 
-        $query = $mysqli->prepare('DELETE FROM products WHERE product_id = ?');
-        $query->bind_param('i', $product_id);
+        $query = $mysqli->prepare('DELETE FROM products WHERE product_id = ? and seller_id = ?');
+        $query->bind_param('ii', $product_id, $seller_id);
         $query->execute();
 
         $response = [];
 
         if ($mysqli->affected_rows > 0) {
-            $response['status'] = 'Success';
+            $response['status'] = 'success';
             $response['message'] = 'Product deleted successfully';
         } else {
-            $response['status'] = 'Error';
+            $response['status'] = 'error';
             $response['message'] = 'Product not found or deletion failed';
         }
 
         echo json_encode($response);
-
-        $query->close();
-        $mysqli->close();
     } else {
-        $response = [];
-        $response["permissions"] = false;
+        $response = ["status" => "error", "message" => "Insufficient permissions"];
         echo json_encode($response);
     }
 } catch (ExpiredException $e) {
     http_response_code(401);
-    echo json_encode(["error" => "expired"]);
+    echo json_encode(["status" => "error", "message" => "Token expired"]);
 } catch (Exception $e) {
     http_response_code(401);
-    echo json_encode(["error" => "Invalid token"]);
+    echo json_encode(["status" => "error", "message" => "Invalid token"]);
+} finally {
+    $query->close();
+    $mysqli->close();
 }
 ?>
