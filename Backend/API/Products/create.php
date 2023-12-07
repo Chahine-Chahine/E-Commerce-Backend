@@ -30,11 +30,12 @@ try {
     $key = "your_secret"; 
     $decoded = JWT::decode($token, new Key($key, 'HS256'));
 
-    if ($decoded->usertype === "seller") {
+    if ($decoded->usertype === "seller" && isset($decoded->user_id)) {
+        $seller_id = $decoded->user_id;
+
         $product_name = $_POST['product_name'];
         $description = $_POST['description'];
         $price = $_POST['price'];
-        $seller_id = $_POST['seller_id'];
 
         $insertProductQuery = $mysqli->prepare('INSERT INTO products (product_name, description, price, seller_id) VALUES (?, ?, ?, ?)');
         $insertProductQuery->bind_param('ssdi', $product_name, $description, $price, $seller_id);

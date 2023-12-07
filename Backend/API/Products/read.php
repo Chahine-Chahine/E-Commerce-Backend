@@ -1,78 +1,56 @@
 <?php
-header('Access-Control-Allow-Origin:*');
+header('Access-Control-Allow-Origin: *');
 include("../../connection.php");
+require '../../../vendor/autoload.php';
 
-$product_id = $_POST['product_id'];
+use Firebase\JWT\JWT;
+use Firebase\JWT\ExpiredException;
+use Firebase\JWT\Key;
 
-$query = $mysqli->prepare('
-    SELECT
-        users.user_id,
-        users.username,
-        users.password,
-        users.role,
-        users.email,
-        products.product_id AS product_id,
-        products.product_name AS product_name,
-        products.description AS product_description,
-        products.price AS product_price
-    FROM
-        users
-    INNER JOIN
-        products ON users.user_id = products.seller_id
-    WHERE
-        products.product_id = ?
-');
-
-// Check if the query preparation was successful
-if (!$query) {
-    $response['status'] = 'Error';
-    $response['message'] = 'Query preparation failed: ' . $mysqli->error;
-    echo json_encode($response);
-    exit;
+$headers = getallheaders();
+if (!isset($headers['Authorization']) || empty($headers['Authorization'])) {
+    http_response_code(401);
+    echo json_encode(["error" => "unauthorized"]);
+    exit();
 }
 
-$query->bind_param('i', $product_id);
-$query->execute();
-$query->store_result();
+$authorizationHeader = $headers['Authorization'];
+$token = null;
 
-// Bind the results to variables
-$query->bind_result(
-    $user_id,
-    $username,
-    $password,
-    $role,
-    $email,
-    $product_id,
-    $product_name,
-    $product_description,
-    $product_price
-);
+$token = trim(str_replace("Bearer", '', $authorizationHeader));
 
-$response = [];
-
-if ($query->num_rows > 0) {
-    // Fetch the results
-    $query->fetch();
-
-    $response['status'] = 'Success';
-    $response['user_id'] = $user_id;
-    $response['username'] = $username;
-    $response['password'] = $password;
-    $response['role'] = $role;
-    $response['email'] = $email;
-    $response['product_id'] = $product_id;
-    $response['product_name'] = $product_name;
-    $response['product_description'] = $product_description;
-    $response['product_price'] = $product_price;
-} else {
-    $response['status'] = 'Error';
-    $response['message'] = 'Product not found';
+if (!$token) {
+    http_response_code(401);
+    echo json_encode(["error" => "unauthorized"]);
+    exit();
 }
 
-echo json_encode($response);
+try {
+    $key = "your_secret"; // Replace with your actual secret key
+    $decoded = JWT::decode($token, new Key($key, 'HS256'));
 
-// Close the statement
-$query->close();
-// Close the database connection
-$mysqli->close();
+    if ($decoded->usertype === "seller" && isset($decoded->user_id)) {
+        $seller_id = $decoded->user_id;
+
+        $result = $mysqli->query("SELECT * FROM products WHERE seller_id = $seller_id");
+
+        $products = [];
+
+        while ($row = $result->fetch_assoc()) {
+            $products[] = $row;
+        }
+
+        echo json_encode($products);
+    } else {
+        $response = [];
+        $response["permissions"] = false;
+        echo json_encode($response);
+    }
+} catch (ExpiredException $e) {
+    http_response_code(401);
+    echo json_encode(["error" => "expired"]);
+} catch (Exception $e) {
+    http_response_code(401);
+    echo json_encode(["error" => "Invalid token"]);
+}
 ?>

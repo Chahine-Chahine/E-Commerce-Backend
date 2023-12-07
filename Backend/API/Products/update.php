@@ -26,45 +26,51 @@ if (!$token) {
 }
 
 try {
-    $key = "your_secret"; 
+    $key = "your_secret"; // Replace with your actual secret key
     $decoded = JWT::decode($token, new Key($key, 'HS256'));
 
-    $product_id = $_POST['product_id'];
-    $product_name = $_POST['product_name'];
-    $description = $_POST['description'];
-    $price = $_POST['price'];
-    $seller_id = $_POST['seller_id'];
+    if ($decoded->usertype === "seller" && isset($decoded->user_id)) {
+        $seller_id = $decoded->user_id;
 
-    $query = $mysqli->prepare('
-        UPDATE products
-        SET
-            product_name = ?,
-            description = ?,
-            price = ?,
-            seller_id = ?
-        WHERE
-            product_id = ?
-    ');
+        $product_id = $_POST['product_id'];
+        $product_name = $_POST['product_name'];
+        $description = $_POST['description'];
+        $price = $_POST['price'];
 
-    $query->bind_param('ssdsi', $product_name, $description, $price, $seller_id, $product_id);
-    $query->execute();
+        $query = $mysqli->prepare('
+            UPDATE products
+            SET
+                product_name = ?,
+                description = ?,
+                price = ?
+            WHERE
+                product_id = ? AND seller_id = ?
+        ');
 
-    $response = [];
+        $query->bind_param('ssiii', $product_name, $description, $price, $product_id, $seller_id);
+        $query->execute();
 
-    if ($mysqli->affected_rows > 0) {
-        $response['status'] = 'Success';
-        $response['message'] = 'Product updated successfully';
+        $response = [];
+
+        if ($mysqli->affected_rows > 0) {
+            $response['status'] = 'Success';
+            $response['message'] = 'Product updated successfully';
+        } else {
+            $response['status'] = 'Error';
+            $response['message'] = 'Product not found or no changes made';
+        }
+
+        echo json_encode($response);
+
+        // Close the statement
+        $query->close();
+        // Close the database connection
+        $mysqli->close();
     } else {
-        $response['status'] = 'Error';
-        $response['message'] = 'Product not found or no changes made';
+        $response = [];
+        $response["permissions"] = false;
+        echo json_encode($response);
     }
-
-    echo json_encode($response);
-
-    // Close the statement
-    $query->close();
-    // Close the database connection
-    $mysqli->close();
 } catch (ExpiredException $e) {
     http_response_code(401);
     echo json_encode(["error" => "expired"]);
